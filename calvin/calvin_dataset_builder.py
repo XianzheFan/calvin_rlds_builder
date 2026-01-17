@@ -89,7 +89,7 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         """Define data splits."""
-        calvin_dataset_path = '/public/home/huangyiyang/data/task_D_D'
+        calvin_dataset_path = '/mnt/project/public/public_datasets/calvin/task_ABC_D'
         return {
             'train': self._generate_examples(path=f'{calvin_dataset_path}/training'),
             'val': self._generate_examples(path=f'{calvin_dataset_path}/validation'),

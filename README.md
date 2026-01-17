@@ -20,14 +20,9 @@ Change the dataset dir to your local disk in this [line](https://github.com/hyy0
 Then run tfds build in the calvin dir:
 ```
 cd calvin
-tfds build --data-dir <your_path>
+tfds build --data_dir=<your_path>
 ```
 Finally, you can find the rlds type datasets in <your_path>.
-
-If you meet some problems, feel free to raise an issue,or contact huangyiyang24@mails.ucas.ac.cn
-
-
-
 
 
 **Thanks a lot for contributing your data! :)**
