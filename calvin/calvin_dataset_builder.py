@@ -32,11 +32,10 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
                             encoding_format='png',
                             doc='Main camera RGB observation.',
                         ),
-                        'wrist_image': tfds.features.Image(
-                            shape=(84, 84, 3),
-                            dtype=np.uint8,
-                            encoding_format='png',
-                            doc='Wrist camera RGB observation.',
+                        'depth': tfds.features.Tensor(
+                            shape=(200, 200),
+                            dtype=np.float32,
+                            doc='Main camera depth observation.',
                         ),
                         'state': tfds.features.Tensor(
                             shape=(15,),
@@ -46,6 +45,12 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
                         )
                     }),
                     'action': tfds.features.Tensor(
+                        shape=(7,),
+                        dtype=np.float64,
+                        doc='Robot action, consists of [7x joint velocities, '
+                            'gripper velocities, 1x terminate episode].',
+                    ),
+                    'rel_action': tfds.features.Tensor(
                         shape=(7,),
                         dtype=np.float64,
                         doc='Robot action, consists of [7x joint velocities, '
@@ -70,13 +75,6 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
                     'is_terminal': tfds.features.Scalar(
                         dtype=np.bool_,
                         doc='True on last step of the episode if it is a terminal step, True for demos.'
-                    ),
-                    'original_actions': 
-                    tfds.features.Tensor(
-                        shape=(7,),
-                        dtype=np.float64,
-                        doc='Robot action, consists of [7x joint velocities, '
-                            ' gripper velocities, 1x terminate episode].',
                     ),
                     'language_instruction': tfds.features.Text(
                         doc='Language Instruction.'
@@ -111,17 +109,17 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
                 episode.append({
                     'observation': {
                         'image': step_data['rgb_static'],
-                        'wrist_image': step_data['rgb_gripper'],
+                        'depth': step_data['depth_static'],
                         'state': step_data['robot_obs'],
                     },
-                    'action': step_data['rel_actions'],
+                    'action': step_data['actions'],
+                    'rel_action': step_data['rel_actions'],
                     'discount': 1.0,
                     'reward': 0,
                     'is_first': step == 0,
                     'is_last': step == (idx_tuple[1] - 1),
                     'is_terminal': i == (idx_tuple[1] - 1),
                     'language_instruction': language_instruction,
-                    'original_actions': step_data['actions'],
                 })
 
             # create output data sample
