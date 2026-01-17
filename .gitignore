@@ -2,3 +2,4 @@
 wandb
 __pycache__
 .idea
+calvin_rlds_builder.egg-info
