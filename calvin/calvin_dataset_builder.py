@@ -27,13 +27,13 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
                 'steps': tfds.features.Dataset({
                     'observation': tfds.features.FeaturesDict({
                         'image': tfds.features.Image(
-                            shape=(200, 200, 3),
+                            shape=(256, 256, 3),
                             dtype=np.uint8,
                             encoding_format='png',
                             doc='Main camera RGB observation.',
                         ),
                         'depth': tfds.features.Tensor(
-                            shape=(200, 200),
+                            shape=(256, 256, 1),
                             dtype=np.float32,
                             doc='Main camera depth observation.',
                         ),
@@ -89,11 +89,25 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         """Define data splits."""
-        calvin_dataset_path = '/mnt/project/public/public_datasets/calvin/task_ABC_D'
+        # calvin_dataset_path = '/mnt/project/public/public_datasets/calvin/task_ABC_D'
+        calvin_dataset_path = '/mnt/project/public/public_datasets/CALVIN/task_D_D'
         return {
             'train': self._generate_examples(path=f'{calvin_dataset_path}/training'),
             'val': self._generate_examples(path=f'{calvin_dataset_path}/validation'),
         }
+
+    def _resize_rgb_depth(self, rgb, depth, out_hw=(256, 256)):
+        # rgb: (H,W,3) uint8
+        rgb_tf = tf.convert_to_tensor(rgb, dtype=tf.uint8)
+        rgb_tf = tf.image.resize(rgb_tf, out_hw, method='bilinear')
+        rgb_tf = tf.cast(tf.round(rgb_tf), tf.uint8)
+        # depth: (H,W) or (H,W,1) float
+        depth_np = depth
+        if depth_np.ndim == 2:
+            depth_np = depth_np[..., None]  # -> (H,W,1)
+        depth_tf = tf.convert_to_tensor(depth_np, dtype=tf.float32)
+        depth_tf = tf.image.resize(depth_tf, out_hw, method='nearest')
+        return rgb_tf.numpy(), depth_tf.numpy()
 
     def _generate_examples(self, path) -> Iterator[Tuple[str, Any]]:
         """Generator of examples for each split."""
@@ -106,10 +120,15 @@ class Calvin(tfds.core.GeneratorBasedBuilder):
             for step in range(idx_tuple[0], idx_tuple[1] + 1): # include the last frame
                 step_data = np.load(os.path.join(episode_path, f'episode_{step:07d}.npz'), allow_pickle=True)
                 # assemble episode --> here we're assuming demos so we set reward to 1 at the end
+                
+                rgb = step_data['rgb_static']  # (200,200,3) uint8
+                depth = step_data['depth_static']  # (200,200) float32
+                rgb, depth = self._resize_rgb_depth(rgb=rgb, depth=depth, out_hw=(256, 256))  # -> (256,256,3), (256,256,1)
+                
                 episode.append({
                     'observation': {
-                        'image': step_data['rgb_static'],
-                        'depth': step_data['depth_static'],
+                        'image': rgb,
+                        'depth': depth,
                         'state': step_data['robot_obs'],
                     },
                     'action': step_data['actions'],
